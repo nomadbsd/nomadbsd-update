@@ -1,0 +1,127 @@
+#!/bin/sh
+
+git_url="https://github.com"
+repo_name="nomadbsd-update"
+repo_url="${git_url}/${repo_name}.git"
+repo_dir="/var/${repo_name}"
+repo_branch="master"
+
+self_path="/usr/sbin/nomadbsd-update"
+self_path="./nomadbsd-update"
+git_pkg="git-lite"
+
+
+bail()
+{
+	echo $* >&2
+	exit 1
+}
+
+install_git()
+{
+	if ! which git >/dev/null; then
+		pkg install -y "${git_pkg}" || bail "Failed to install ${git_pkg}"
+	fi
+}
+
+_git()
+{
+	git $* || bail "git command failed"
+}
+
+git_pull()
+{
+	local repo_dir
+	
+	repo_dir=$1
+	(cd "${repo_dir}"; _git pull)
+}
+
+get_last_local_commit()
+{
+	(cd "${repo_dir}" && \
+		_git log -n 1 --pretty=format:%H origin/"${repo_branch}")
+}
+
+get_last_remote_commit()
+{
+	_git ls-remote -h "${repo_url}" | \
+		grep "refs/heads/${repo_branch}" | cut -f 1
+}
+
+self_update_available()
+{
+	local local_commit remote_commit
+
+	local_commit=$(get_last_local_commit)
+	remote_commit=$(get_last_remote_commit)
+
+	[ "${local_commit}" != "${remote_commit}" ]
+}
+
+install_self()
+{
+	(cd "${repo_dir}" && make install) || bail "Failed to install ${repo_name}"
+}
+
+update_self()
+{
+	install_git
+	[ ! -d "${repo_dir}" ] && _git clone "${repo_url}" "${repo_dir}"
+	if self_update_available; then
+		git_pull "${repo_dir}"
+		install_self "${repo_dir}"
+	fi
+}
+
+#
+# Make sure all components for the next stages are ready.
+#
+bootstrap()
+{
+	return 0
+}
+
+do_update()
+{
+	exit 0
+}
+
+usage()
+{
+	echo "Usage: $(basename $0) [options] command"
+	echo "Options:"
+	echo "-h       Show this message."
+	echo ""
+	echo "Commands:"
+	echo "update   Run the update."
+	exit 1
+}
+
+self_updated=0
+
+while [ $# -gt 0 ]; do
+	case "$1" in
+	-_)
+		self_updated=1
+		;;
+	-*)
+		usage
+		;;
+
+	update)
+		if [ ${self_updated} -ne 1 ]; then
+			update_self
+			exec ${self_path} -_ update
+		fi
+		bootstrap
+		do_update
+		;;
+	*)
+		usage
+		;;
+	esac
+	shift
+done
+
+usage
