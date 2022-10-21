@@ -12,3 +12,6 @@ ${PROGRAM}: ${PROGRAM}.in
 install: ${INSTALL_TARGETS}
 	if [ ! -d ${BINDIR} ]; then mkdir -p ${BINDIR}; fi
 	${BSD_INSTALL_SCRIPT} ${PROGRAM} ${DESTDIR}${BINDIR}
+
+clean:
+	rm -f ${PROGRAM}
