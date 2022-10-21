@@ -2,12 +2,11 @@
 
 git_url="https://github.com"
 repo_name="nomadbsd-update"
-repo_url="${git_url}/${repo_name}.git"
+repo_url="${git_url}/nomadbsd/${repo_name}.git"
 repo_dir="/var/${repo_name}"
 repo_branch="main"
 
-self_path="/usr/sbin/nomadbsd-update"
-self_path="./nomadbsd-update"
+self_path="@SELF_PATH@"
 git_pkg="git-lite"
 
 
