@@ -1,14 +1,8 @@
 #!/bin/sh
 
-git_url="https://github.com"
-repo_name="nomadbsd-update"
-repo_url="${git_url}/nomadbsd/${repo_name}.git"
-repo_dir="/var/${repo_name}"
-repo_branch="main"
+. @PATH_CONFIG@
 
 self_path="@SELF_PATH@"
-git_pkg="git-lite"
-
 
 bail()
 {
@@ -30,10 +24,9 @@ _git()
 
 git_pull()
 {
-	local repo_dir
+	local repo_dir=$1
 	
-	repo_dir=$1
-	(cd "${repo_dir}"; _git pull)
+	(cd "${repo_dir}"; _git checkout ${main_branch}; _git pull)
 }
 
 get_last_local_commit()
@@ -69,6 +62,7 @@ update_self()
 	[ ! -d "${repo_dir}" ] && _git clone "${repo_url}" "${repo_dir}"
 	if self_update_available; then
 		git_pull "${repo_dir}"
+		(cd "${repo_dir}" && _git checkout ${repo_branch})
 		install_self "${repo_dir}"
 	fi
 }
